@@ -112,12 +112,7 @@
             .wizard-grid { grid-template-columns:1fr; }
             .console-col { order:-1; }
             .console-col .config-section { display:none; }
-            .console-header { display:none; }
             .cmd-display { min-height:unset; max-height:9rem; overflow-y:auto; }
-            .stats-row { gap:6px; margin-bottom:10px; }
-            .stat-card { padding:5px 4px; }
-            .stat-val { font-size:0.85rem; }
-            .stat-lbl { font-size:0.55rem; margin-top:1px; }
             .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
             .btn-row .btn-primary,
             .btn-row .btn-ghost { margin-bottom:0; }
@@ -324,6 +319,7 @@
             color:#fff; border:none; padding:11px 20px; border-radius:8px; cursor:pointer;
             font-family:'Share Tech Mono',monospace; font-size:0.8rem; letter-spacing:0.14em;
             text-transform:uppercase; transition:all 0.2s; box-shadow:0 0 16px var(--accent-dim); margin-bottom:8px;
+            white-space:nowrap;
         }
         .btn-primary:hover { background:linear-gradient(135deg,#ff5cc0,var(--accent)); box-shadow:0 0 24px var(--accent-glow); transform:translateY(-1px); }
 
@@ -331,7 +327,7 @@
             display:block; width:100%; background:transparent; color:var(--muted);
             border:1px solid rgba(240,60,168,0.2); padding:9px 20px; border-radius:8px; cursor:pointer;
             font-family:'Share Tech Mono',monospace; font-size:0.78rem; letter-spacing:0.12em;
-            text-transform:uppercase; transition:all 0.2s;
+            text-transform:uppercase; transition:all 0.2s; white-space:nowrap;
         }
         .btn-ghost:hover { border-color:var(--accent-dim); color:var(--text); }
 
@@ -760,31 +756,9 @@
         <div class="console-col">
 
             <div class="console-card">
-                <div class="console-header">
-                    <div class="console-dots">
-                        <div class="dot dot-r"></div>
-                        <div class="dot dot-y"></div>
-                        <div class="dot dot-g"></div>
-                    </div>
-                    <span class="console-title">COMMAND OUTPUT</span>
-                </div>
                 <div class="console-body">
                     <div class="cmd-display" id="cmd-display">
                         <span class="cmd-bin">yt-dlp</span> <span class="cmd-url">"URL"</span>
-                    </div>
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <div class="stat-val" id="stat-flags">0</div>
-                            <div class="stat-lbl">Flags</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-val" id="stat-mode">MERGE</div>
-                            <div class="stat-lbl">Mode</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-val" id="stat-extras">0</div>
-                            <div class="stat-lbl">Extras</div>
-                        </div>
                     </div>
                     <div class="btn-row">
                         <button class="btn-primary" id="copy-btn" onclick="copyCommand()">⧉ &nbsp; Copy Command</button>
@@ -1061,9 +1035,6 @@ function renderPlain({ parts, url }) {
 function update() {
     const result = buildCommand();
     document.getElementById('cmd-display').innerHTML = renderHTML(result);
-    document.getElementById('stat-flags').textContent  = result.flags;
-    document.getElementById('stat-mode').textContent   = result.modeLabel;
-    document.getElementById('stat-extras').textContent = result.extras;
 }
 
 // ── Copy ──────────────────────────────────────────────
