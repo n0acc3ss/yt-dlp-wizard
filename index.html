@@ -85,7 +85,7 @@
         
         }
         .logo-ring img {
-            width: 157%; height: 157%;
+            width: 165%; height: 165%;
             object-fit: contain; 
             display: block;
         }
@@ -111,6 +111,7 @@
         @media (max-width:900px) {
             .wizard-grid { grid-template-columns:1fr; }
             .console-col { order:-1; }
+            .console-col .config-section { display:none; }
         }
 
         /* ── Config sections ────────────────────────── */
@@ -503,7 +504,7 @@
                             <input type="text" id="save-path" placeholder="~/Downloads/Videos" oninput="update()">
                             <button type="button" class="browse-btn" onclick="browseSavePath()" title="Browse for folder">📁</button>
                         </div>
-                        <p class="path-note">📁 Browse fills the folder name as a starting point — complete the full path manually if needed.</p>
+                        <p class="path-note">Browse fills the folder name as a starting point — complete the full path manually if needed.</p>
                     </div>
 
                     <!-- Filename template — friendly labels, no %(...)s syntax shown -->
@@ -821,7 +822,7 @@
 
     </div><!-- /wizard-grid -->
 
-    <footer>yt-dlp command wizard &nbsp;·&nbsp; powered by dark matter &nbsp;·&nbsp; <span style="color:var(--accent)">// sweep</span></footer>
+    <footer><span style="color:var(--accent);text-shadow:0 0 8px var(--accent),0 0 20px var(--accent-glow),0 0 40px var(--accent-dim)">yt-dlp command wizard</span><br>● powered by dark matter ●</footer>
 
 </div><!-- /wrapper -->
 
@@ -1151,3 +1152,4 @@ document.addEventListener('DOMContentLoaded', update);
 </script>
 </body>
 </html>
+ำ
