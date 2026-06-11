@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yt-dlp — Command Wizard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:          #0a0812;
+            --mantle:      #110d1a;
+            --surface:     #1a1226;
+            --overlay:     #241830;
+            --crust:       #0d0a14;
+            --accent:      #f03ca8;
+            --accent-dim:  rgba(240,60,168,0.35);
+            --accent-glow: rgba(240,60,168,0.6);
+            --accent-halo: rgba(240,60,168,0.15);
+            --text:        #edd8f5;
+            --subtext:     #b89fc4;
+            --muted:       #7a6285;
+            --code-text:   #f8c0e8;
+            --code-bg:     #160e20;
+            --warn-border: #ffca28;
+            --warn-bg:     rgba(255,202,40,0.07);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            line-height: 1.7;
+        }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px);
+            pointer-events: none; z-index: 100;
+        }
+
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: radial-gradient(circle, rgba(240,60,168,0.18) 1px, transparent 1px);
+            background-size: 28px 28px;
+            pointer-events: none; z-index: 0;
+        }
+
+        .blob-container { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.25; animation: blobDrift 18s ease-in-out infinite alternate; }
+        .blob-1 { width:500px;height:500px; background:radial-gradient(circle,#f03ca8,#7c0062); top:-10%;left:-10%; animation-duration:20s; }
+        .blob-2 { width:400px;height:400px; background:radial-gradient(circle,#8b00ff,#3d0070); bottom:-10%;right:-10%; animation-duration:24s;animation-delay:-8s; }
+        .blob-3 { width:300px;height:300px; background:radial-gradient(circle,#f03ca8,#3a0055); top:40%;left:60%; animation-duration:16s;animation-delay:-4s; }
+
+        @keyframes blobDrift {
+            0%   { transform: translate(0,0) scale(1); }
+            33%  { transform: translate(40px,-30px) scale(1.08); }
+            66%  { transform: translate(-20px,50px) scale(0.95); }
+            100% { transform: translate(30px,20px) scale(1.04); }
+        }
+
+        .wrapper { position:relative; z-index:10; max-width:1200px; margin:0 auto; padding:40px 24px 80px; }
+
+        /* ── Header ─────────────────────────────────── */
+        header { display:flex; align-items:center; gap:20px; margin-bottom:40px; }
+
+        /*
+         * Logo ring: purely decorative border + glow. overflow is intentionally
+         * NOT hidden so the image inside never gets circular-cropped or shrunk.
+         * The border-radius applies to the container bg/border, not the child img.
+         */
+        .logo-ring {
+            flex-shrink: 0;
+            width: 88px; height: 88px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 18px var(--accent-glow), 0 0 40px var(--accent-dim), inset 0 0 20px rgba(240,60,168,0.1);
+            background: var(--mantle);
+            animation: haloBreath 3s ease-in-out infinite;
+            display: flex; align-items: center; justify-content: center;
+            padding: 6px;
+            /* No overflow:hidden — logo displays at full, uncropped size */
+        }
+        .logo-ring img {
+            width: 100%; height: 100%;
+            object-fit: contain; /* scale to fit, never crop */
+            display: block;
+        }
+
+        @keyframes haloBreath {
+            0%,100% { box-shadow: 0 0 18px var(--accent-glow), 0 0 40px var(--accent-dim), inset 0 0 20px rgba(240,60,168,0.1); }
+            50%     { box-shadow: 0 0 28px var(--accent-glow), 0 0 60px var(--accent-dim), inset 0 0 30px rgba(240,60,168,0.18); }
+        }
+
+        .header-text h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(1.4rem,3.5vw,2.2rem);
+            font-weight:700; letter-spacing:0.08em; line-height:1.2; text-transform:uppercase;
+        }
+        h1 .glow {
+            color: var(--accent);
+            text-shadow: 0 0 8px var(--accent), 0 0 20px var(--accent-glow), 0 0 40px var(--accent-dim);
+        }
+        .subtitle { font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; margin-top:6px; }
+
+        /* ── Layout grid ────────────────────────────── */
+        .wizard-grid { display:grid; grid-template-columns:1fr 380px; gap:24px; align-items:start; }
+        @media (max-width:900px) {
+            .wizard-grid { grid-template-columns:1fr; }
+            .console-col { order:-1; }
+        }
+
+        /* ── Config sections ────────────────────────── */
+        .config-section {
+            background: var(--mantle);
+            border: 1px solid rgba(240,60,168,0.2);
+            border-radius:12px; overflow:hidden; margin-bottom:16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .config-section:hover { border-color:var(--accent-dim); box-shadow:0 0 20px rgba(240,60,168,0.08); }
+
+        .section-header {
+            padding:14px 18px; display:flex; align-items:center; gap:12px;
+            border-bottom:1px solid rgba(240,60,168,0.12);
+            background:rgba(240,60,168,0.04);
+        }
+        .section-num {
+            font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--accent);
+            background:var(--accent-halo); border:1px solid var(--accent-dim);
+            padding:2px 8px; border-radius:20px; letter-spacing:0.1em; flex-shrink:0;
+        }
+        .section-title { font-family:'Orbitron',monospace; font-size:0.78rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text); }
+
+        .section-body { padding:18px; }
+
+        /* ── Form elements ──────────────────────────── */
+        .field { margin-bottom:16px; }
+        .field:last-child { margin-bottom:0; }
+        .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+        label {
+            display:block; font-family:'Share Tech Mono',monospace; font-size:0.72rem;
+            color:var(--accent); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:6px;
+        }
+        .label-hint { font-family:'DM Sans',sans-serif; color:var(--muted); font-size:0.72rem; text-transform:none; letter-spacing:0; margin-left:6px; }
+
+        input[type="text"], input[type="url"], select {
+            width:100%; background:var(--code-bg); border:1px solid rgba(240,60,168,0.25);
+            border-radius:7px; color:var(--code-text); font-family:'Share Tech Mono',monospace;
+            font-size:0.88rem; padding:10px 14px; outline:none;
+            transition: border-color 0.25s, box-shadow 0.25s;
+        }
+        input[type="text"]:focus, input[type="url"]:focus, select:focus {
+            border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-halo);
+        }
+        input::placeholder { color:var(--muted); }
+
+        select {
+            cursor:pointer; appearance:none;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f03ca8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat:no-repeat; background-position:right 12px center; padding-right:36px;
+        }
+        select option { background:var(--crust); color:var(--text); }
+
+        /* ── Path input with browse button ──────────── */
+        .path-input-group {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .path-input-group input { flex: 1; min-width: 0; }
+
+        .browse-btn {
+            flex-shrink: 0;
+            background: var(--overlay);
+            border: 1px solid rgba(240,60,168,0.3);
+            border-radius: 7px;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 12px;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .browse-btn:hover { background: var(--accent-halo); border-color: var(--accent); box-shadow: 0 0 10px var(--accent-dim); }
+        .browse-btn:active { transform: scale(0.95); }
+
+        .path-note {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-top: 5px;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Segmented Control ──────────────────────── */
+        .seg-control {
+            display:flex; gap:4px; background:var(--code-bg);
+            border:1px solid rgba(240,60,168,0.2); border-radius:8px; padding:4px;
+        }
+        .seg-btn {
+            flex:1; background:transparent; border:1px solid transparent; border-radius:5px;
+            color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.72rem;
+            letter-spacing:0.08em; text-transform:uppercase; padding:7px 6px; cursor:pointer; transition:all 0.2s;
+        }
+        .seg-btn:hover { color:var(--text); border-color:rgba(240,60,168,0.2); }
+        .seg-btn.active {
+            background:var(--accent-halo); border-color:var(--accent-dim); color:var(--accent);
+            box-shadow:0 0 10px rgba(240,60,168,0.2); text-shadow:0 0 8px var(--accent-dim);
+        }
+
+        /* ── Toggle Switch ──────────────────────────── */
+        .toggle-row {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:10px 0; border-bottom:1px solid rgba(240,60,168,0.08);
+        }
+        .toggle-row:last-child { border-bottom:none; padding-bottom:0; }
+        .toggle-row:first-child { padding-top:0; }
+        .toggle-label { font-size:0.88rem; color:var(--subtext); }
+        .toggle-flag { font-family:'Share Tech Mono',monospace; font-size:0.68rem; color:var(--muted); margin-top:2px; }
+
+        .toggle { position:relative; width:42px; height:22px; flex-shrink:0; cursor:pointer; }
+        .toggle input { opacity:0; width:0; height:0; position:absolute; }
+        .toggle-track {
+            position:absolute; inset:0; background:rgba(240,60,168,0.1);
+            border:1px solid rgba(240,60,168,0.2); border-radius:11px; transition:0.25s;
+        }
+        .toggle-track::after {
+            content:''; position:absolute; width:16px; height:16px;
+            left:2px; top:2px; background:var(--muted); border-radius:50%; transition:0.25s;
+        }
+        .toggle input:checked + .toggle-track { background:var(--accent-halo); border-color:var(--accent-dim); box-shadow:0 0 8px var(--accent-dim); }
+        .toggle input:checked + .toggle-track::after { transform:translateX(20px); background:var(--accent); box-shadow:0 0 6px var(--accent); }
+
+        /* ── Conditional visibility ─────────────────── */
+        .cond { display:none; }
+        .cond.show { display:block; }
+
+        /* ── Divider ────────────────────────────────── */
+        .divider { border:none; border-top:1px solid rgba(240,60,168,0.1); margin:14px 0; }
+
+        /* ── Info / warning callout ─────────────────── */
+        .callout-info {
+            background: var(--warn-bg);
+            border: 1px solid rgba(255,202,40,0.3);
+            border-left: 3px solid var(--warn-border);
+            border-radius: 7px;
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            color: var(--subtext);
+            margin-bottom: 12px;
+        }
+        .callout-info strong {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--warn-border);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* ── Preset buttons ─────────────────────────── */
+        .preset-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+        .preset-btn {
+            background:var(--surface); border:1px solid rgba(240,60,168,0.2); border-radius:7px;
+            padding:10px 12px; cursor:pointer; text-align:left; transition:all 0.2s; color:var(--text);
+        }
+        .preset-btn:hover { border-color:var(--accent-dim); background:var(--overlay); box-shadow:0 0 12px rgba(240,60,168,0.1); }
+        .preset-name { font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--accent); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:3px; }
+        .preset-desc { font-size:0.78rem; color:var(--subtext); }
+
+        /* ── Console ────────────────────────────────── */
+        .console-col { position:sticky; top:24px; }
+
+        .console-card {
+            background:var(--mantle); border:1px solid rgba(240,60,168,0.25);
+            border-radius:12px; overflow:hidden; box-shadow:0 0 30px rgba(240,60,168,0.08);
+        }
+        .console-header {
+            padding:12px 18px; background:var(--crust); border-bottom:1px solid rgba(240,60,168,0.2);
+            display:flex; align-items:center; gap:10px;
+        }
+        .console-dots { display:flex; gap:6px; }
+        .dot { width:10px; height:10px; border-radius:50%; }
+        .dot-r { background:#ff5f56; } .dot-y { background:#ffbd2e; } .dot-g { background:#27c93f; }
+        .console-title { font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--muted); letter-spacing:0.14em; text-transform:uppercase; margin:0 auto; }
+
+        .console-body { padding:18px; }
+
+        .cmd-display {
+            background:var(--code-bg); border:1px solid rgba(240,60,168,0.2); border-radius:8px;
+            padding:16px; min-height:130px; font-family:'Share Tech Mono',monospace; font-size:0.82rem;
+            line-height:1.7; white-space:pre-wrap; word-break:break-all; margin-bottom:14px;
+        }
+
+        .cmd-bin   { color:#f8c0e8; font-weight:bold; }
+        .cmd-flag  { color:var(--accent); text-shadow:0 0 6px var(--accent-dim); }
+        .cmd-value { color:#c4f0ff; }
+        .cmd-url   { color:#ffe599; }
+
+        /* ── Stats ──────────────────────────────────── */
+        .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+        .stat-card { background:var(--surface); border:1px solid rgba(240,60,168,0.15); border-radius:7px; padding:10px 8px; text-align:center; }
+        .stat-val { font-family:'Orbitron',monospace; font-size:1.05rem; font-weight:700; color:var(--accent); text-shadow:0 0 10px var(--accent-dim); }
+        .stat-lbl { font-family:'Share Tech Mono',monospace; font-size:0.6rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-top:2px; }
+
+        /* ── Buttons ────────────────────────────────── */
+        .btn-primary {
+            display:block; width:100%; background:linear-gradient(135deg,var(--accent),#c4006e);
+            color:#fff; border:none; padding:11px 20px; border-radius:8px; cursor:pointer;
+            font-family:'Share Tech Mono',monospace; font-size:0.8rem; letter-spacing:0.14em;
+            text-transform:uppercase; transition:all 0.2s; box-shadow:0 0 16px var(--accent-dim); margin-bottom:8px;
+        }
+        .btn-primary:hover { background:linear-gradient(135deg,#ff5cc0,var(--accent)); box-shadow:0 0 24px var(--accent-glow); transform:translateY(-1px); }
+
+        .btn-ghost {
+            display:block; width:100%; background:transparent; color:var(--muted);
+            border:1px solid rgba(240,60,168,0.2); padding:9px 20px; border-radius:8px; cursor:pointer;
+            font-family:'Share Tech Mono',monospace; font-size:0.78rem; letter-spacing:0.12em;
+            text-transform:uppercase; transition:all 0.2s;
+        }
+        .btn-ghost:hover { border-color:var(--accent-dim); color:var(--text); }
+
+        /* ── Scrollbar ──────────────────────────────── */
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:var(--bg); }
+        ::-webkit-scrollbar-thumb { background:var(--accent-dim); border-radius:3px; }
+        ::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+
+        footer { text-align:center; margin-top:60px; font-family:'Share Tech Mono',monospace; font-size:0.72rem; color:var(--muted); letter-spacing:0.12em; opacity:0.6; }
+    </style>
+</head>
+<body>
+
+<div class="blob-container" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
+<div class="wrapper">
+
+    <header>
+        <div class="logo-ring">
+            <img src="al-phone/yt-dlp_wizard_logo.webp" alt="yt-dlp">
+        </div>
+        <div class="header-text">
+            <h1><span class="glow">yt-dlp</span> Command Wizard</h1>
+            <p class="subtitle">Build · Configure · Copy // Interactive Command Builder</p>
+        </div>
+    </header>
+
+    <div class="wizard-grid">
+
+        <!-- ── LEFT: Config ──────────────────────────── -->
+        <div class="config-col">
+
+            <!-- 01 Source -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">01</span>
+                    <span class="section-title">Source URL</span>
+                </div>
+                <div class="section-body">
+                    <div class="field">
+                        <label>Target URL <span class="label-hint">video, playlist, or channel</span></label>
+                        <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." oninput="update()">
+                    </div>
+                    <div class="field">
+                        <label>Source Type</label>
+                        <div class="seg-control">
+                            <button class="seg-btn active" data-seg="src-type" data-val="single" onclick="setSeg(this)">Single Video</button>
+                            <button class="seg-btn" data-seg="src-type" data-val="playlist" onclick="setSeg(this)">Playlist</button>
+                        </div>
+                    </div>
+                    <div class="cond" id="cond-playlist">
+                        <div class="field" style="margin-top:12px">
+                            <label>Playlist Items <span class="label-hint">e.g. 1:10 or 2,5,8</span></label>
+                            <input type="text" id="playlist-items" placeholder="1:10" oninput="update()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 02 Mode -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">02</span>
+                    <span class="section-title">Download Mode</span>
+                </div>
+                <div class="section-body">
+                    <div class="field">
+                        <label>Mode</label>
+                        <div class="seg-control">
+                            <button class="seg-btn" data-seg="mode" data-val="best" onclick="setSeg(this)">Auto Best</button>
+                            <button class="seg-btn active" data-seg="mode" data-val="merge" onclick="setSeg(this)">Video + Audio</button>
+                            <button class="seg-btn" data-seg="mode" data-val="audio" onclick="setSeg(this)">Audio Only</button>
+                        </div>
+                    </div>
+
+                    <div class="cond" id="cond-best" style="margin-top:10px">
+                        <p style="font-size:0.85rem;color:var(--subtext);">Downloads the best pre-muxed format automatically. No ffmpeg merge needed. Ideal for quick downloads without codec control.</p>
+                    </div>
+
+                    <div class="cond show" id="cond-merge">
+                        <hr class="divider">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Merge Format</label>
+                                <select id="merge-fmt" onchange="update()">
+                                    <option value="mp4" selected>mp4</option>
+                                    <option value="mkv">mkv</option>
+                                    <option value="webm">webm</option>
+                                    <option value="mov">mov</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Max Resolution</label>
+                                <select id="resolution" onchange="update()">
+                                    <option value="best" selected>Best Available</option>
+                                    <option value="2160">4K (2160p)</option>
+                                    <option value="1440">2K (1440p)</option>
+                                    <option value="1080">1080p</option>
+                                    <option value="720">720p</option>
+                                    <option value="480">480p</option>
+                                    <option value="360">360p</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Video Codec</label>
+                                <select id="vcodec" onchange="update()">
+                                    <option value="any" selected>Any</option>
+                                    <option value="h264">H.264 (AVC)</option>
+                                    <option value="h265">H.265 (HEVC)</option>
+                                    <option value="vp9">VP9</option>
+                                    <option value="av1">AV1</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Audio Codec</label>
+                                <select id="acodec" onchange="update()">
+                                    <option value="any" selected>Any</option>
+                                    <option value="aac">AAC</option>
+                                    <option value="opus">Opus</option>
+                                    <option value="mp3">MP3</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cond" id="cond-audio">
+                        <hr class="divider">
+                        <div class="field-row">
+                            <div class="field">
+                                <label>Audio Format</label>
+                                <select id="audio-fmt" onchange="update()">
+                                    <option value="mp3" selected>mp3</option>
+                                    <option value="m4a">m4a</option>
+                                    <option value="flac">flac</option>
+                                    <option value="wav">wav</option>
+                                    <option value="opus">opus</option>
+                                    <option value="aac">aac</option>
+                                    <option value="alac">alac</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Quality <span class="label-hint">0=best, 10=worst</span></label>
+                                <select id="audio-quality" onchange="update()">
+                                    <option value="0" selected>0 — Best</option>
+                                    <option value="2">2</option>
+                                    <option value="5">5 — Default</option>
+                                    <option value="8">8</option>
+                                    <option value="10">10 — Worst</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>Bitrate Override <span class="label-hint">replaces quality value</span></label>
+                            <input type="text" id="audio-bitrate" placeholder="e.g. 192K, 320K" oninput="update()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 03 Output -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">03</span>
+                    <span class="section-title">Output &amp; Filesystem</span>
+                </div>
+                <div class="section-body">
+
+                    <!-- Save path with folder browse -->
+                    <div class="field">
+                        <label>Save Path <span class="label-hint">-P / --paths</span></label>
+                        <div class="path-input-group">
+                            <input type="text" id="save-path" placeholder="~/Downloads/Videos" oninput="update()">
+                            <button type="button" class="browse-btn" onclick="browseSavePath()" title="Browse for folder">📁</button>
+                        </div>
+                        <p class="path-note">📁 Browse fills the folder name as a starting point — complete the full path manually if needed.</p>
+                    </div>
+
+                    <!-- Filename template — friendly labels, no %(...)s syntax shown -->
+                    <div class="field">
+                        <label>Filename Template <span class="label-hint">-o / --output</span></label>
+                        <select id="tmpl-preset" onchange="applyTemplate(this.value)">
+                            <option value="%(title)s [%(id)s].%(ext)s">Title [ID]  —  default</option>
+                            <option value="%(title)s.%(ext)s">Title only</option>
+                            <option value="%(uploader)s - %(title)s.%(ext)s">Uploader — Title</option>
+                            <option value="%(upload_date)s - %(title)s.%(ext)s">Date — Title</option>
+                            <option value="%(playlist_index)s - %(title)s.%(ext)s">Index — Title  (playlist)</option>
+                            <option value="%(uploader)s/%(title)s.%(ext)s">Uploader / Title  (subfolder)</option>
+                            <option value="fixed">Fixed Filename…</option>
+                            <option value="custom">Custom Template…</option>
+                        </select>
+                    </div>
+
+                    <!-- Fixed name input -->
+                    <div class="cond" id="cond-fixed-tmpl">
+                        <div class="field">
+                            <label>Base Filename <span class="label-hint">no extension needed</span></label>
+                            <input type="text" id="fixed-name" placeholder="My Video Title" oninput="update()">
+                            <p class="path-note">Extension is added automatically from the downloaded format (e.g. .mp4, .mp3).</p>
+                        </div>
+                    </div>
+
+                    <!-- Custom template input -->
+                    <div class="cond" id="cond-custom-tmpl">
+                        <div class="field">
+                            <label>Custom Template <span class="label-hint">%(field)s syntax</span></label>
+                            <input type="text" id="custom-tmpl" placeholder="%(title)s.%(ext)s" oninput="update()">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 04 Subtitles & Metadata -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">04</span>
+                    <span class="section-title">Subtitles &amp; Metadata</span>
+                </div>
+                <div class="section-body">
+                    <div class="field">
+                        <label>Subtitles</label>
+                        <div class="seg-control">
+                            <button class="seg-btn active" data-seg="subs" data-val="none" onclick="setSeg(this)">None</button>
+                            <button class="seg-btn" data-seg="subs" data-val="manual" onclick="setSeg(this)">Manual</button>
+                            <button class="seg-btn" data-seg="subs" data-val="auto" onclick="setSeg(this)">Auto-Gen</button>
+                        </div>
+                    </div>
+                    <div class="cond" id="cond-subs">
+                        <div class="field-row" style="margin-top:12px">
+                            <div class="field">
+                                <label>Languages</label>
+                                <input type="text" id="sub-langs" placeholder="th,en.*" oninput="update()">
+                            </div>
+                            <div class="field">
+                                <label>Sub Format</label>
+                                <select id="sub-format" onchange="update()">
+                                    <option value="">best</option>
+                                    <option value="srt">srt</option>
+                                    <option value="ass">ass</option>
+                                    <option value="vtt">vtt</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="divider">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Embed Thumbnail</div><div class="toggle-flag">--embed-thumbnail</div></div>
+                        <label class="toggle"><input type="checkbox" id="embed-thumb" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Embed Metadata</div><div class="toggle-flag">--embed-metadata</div></div>
+                        <label class="toggle"><input type="checkbox" id="embed-meta" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Embed Subtitles in Video</div><div class="toggle-flag">--embed-subs &nbsp;(mp4 / mkv / webm)</div></div>
+                        <label class="toggle"><input type="checkbox" id="embed-subs" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 05 SponsorBlock -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">05</span>
+                    <span class="section-title">SponsorBlock</span>
+                </div>
+                <div class="section-body">
+                    <div class="field">
+                        <label>Mode</label>
+                        <div class="seg-control">
+                            <button class="seg-btn active" data-seg="sb" data-val="off" onclick="setSeg(this)">Off</button>
+                            <button class="seg-btn" data-seg="sb" data-val="mark" onclick="setSeg(this)">Mark Chapters</button>
+                            <button class="seg-btn" data-seg="sb" data-val="remove" onclick="setSeg(this)">Remove Segments</button>
+                        </div>
+                    </div>
+                    <div class="cond" id="cond-sb">
+                        <div class="field" style="margin-top:12px">
+                            <label>Categories</label>
+                            <select id="sb-cats" onchange="update()">
+                                <option value="all">All categories</option>
+                                <option value="sponsor">Sponsor only</option>
+                                <option value="intro,outro">Intro + Outro</option>
+                                <option value="sponsor,intro,outro">Sponsor + Intro/Outro</option>
+                                <option value="default">Default (all,-filler)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 06 Cookies & Auth — dedicated section -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">06</span>
+                    <span class="section-title">Cookies &amp; Auth</span>
+                </div>
+                <div class="section-body">
+                    <div class="field">
+                        <label>Cookie Source</label>
+                        <div class="seg-control">
+                            <button class="seg-btn active" data-seg="cookies-src" data-val="none"    onclick="setSeg(this)">None</button>
+                            <button class="seg-btn"        data-seg="cookies-src" data-val="browser" onclick="setSeg(this)">From Browser</button>
+                            <button class="seg-btn"        data-seg="cookies-src" data-val="file"    onclick="setSeg(this)">cookies.txt</button>
+                        </div>
+                    </div>
+
+                    <!-- From Browser -->
+                    <div class="cond" id="cond-cookies-browser">
+                        <div class="field" style="margin-top:12px">
+                            <label>Browser</label>
+                            <select id="cookies-browser-sel" onchange="handleBrowserSelect(this.value)">
+                                <option value="chrome">Chrome</option>
+                                <option value="firefox">Firefox</option>
+                                <option value="chromium">Chromium</option>
+                                <option value="edge">Edge</option>
+                                <option value="brave">Brave</option>
+                                <option value="vivaldi">Vivaldi</option>
+                                <option value="opera">Opera</option>
+                                <option value="whale">Whale</option>
+                                <option value="safari">Safari  (macOS only)</option>
+                                <option value="custom">Custom / Other…</option>
+                            </select>
+                        </div>
+                        <div class="cond" id="cond-cookies-browser-custom">
+                            <div class="field">
+                                <label>Browser Name <span class="label-hint">exact name as yt-dlp recognises it</span></label>
+                                <input type="text" id="cookies-browser-custom" placeholder="e.g. chromium, whale" oninput="update()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- cookies.txt file -->
+                    <div class="cond" id="cond-cookies-file">
+                        <div class="callout-info" style="margin-top:12px">
+                            <strong>⚠ Netscape HTTP Cookie File format required</strong>
+                            Export using a browser extension such as <em>Get cookies.txt LOCALLY</em>. The file must start with <code style="background:rgba(255,202,40,0.1);color:var(--warn-border);padding:1px 5px;border-radius:3px;font-size:0.82em;"># Netscape HTTP Cookie File</code>.
+                        </div>
+                        <div class="field">
+                            <label>Cookie File Path <span class="label-hint">--cookies</span></label>
+                            <div class="path-input-group">
+                                <input type="text" id="cookies-path" placeholder="/path/to/cookies.txt" oninput="update()">
+                                <button type="button" class="browse-btn" onclick="browseCookiesFile()" title="Browse for cookies.txt">📂</button>
+                            </div>
+                            <!-- Hidden file input for the browse button -->
+                            <input type="file" id="cookies-file-input" accept=".txt,.cookies"
+                                   style="display:none" onchange="handleCookiesFile(this)">
+                            <p class="path-note">Browse fills the filename — complete the full path manually if needed.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 07 Network & Throttling -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">07</span>
+                    <span class="section-title">Network &amp; Throttling</span>
+                </div>
+                <div class="section-body">
+                    <div class="field-row">
+                        <div class="field">
+                            <label>Rate Limit <span class="label-hint">-r</span></label>
+                            <input type="text" id="rate-limit" placeholder="e.g. 2M, 500K" oninput="update()">
+                        </div>
+                        <div class="field">
+                            <label>Concurrent Frags <span class="label-hint">-N</span></label>
+                            <input type="text" id="concur-frags" placeholder="e.g. 4" oninput="update()">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Proxy <span class="label-hint">--proxy</span></label>
+                        <input type="text" id="proxy" placeholder="socks5://127.0.0.1:1080" oninput="update()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 08 Flags -->
+            <div class="config-section">
+                <div class="section-header">
+                    <span class="section-num">08</span>
+                    <span class="section-title">Flags</span>
+                </div>
+                <div class="section-body">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Simulate (Dry Run)</div><div class="toggle-flag">-s / --simulate</div></div>
+                        <label class="toggle"><input type="checkbox" id="flag-sim" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Verbose Output</div><div class="toggle-flag">-v / --verbose</div></div>
+                        <label class="toggle"><input type="checkbox" id="flag-verbose" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Ignore Errors</div><div class="toggle-flag">-i / --ignore-errors</div></div>
+                        <label class="toggle"><input type="checkbox" id="flag-ignore" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">No Overwrites</div><div class="toggle-flag">-w / --no-overwrites</div></div>
+                        <label class="toggle"><input type="checkbox" id="flag-nowrt" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Write Thumbnail to Disk</div><div class="toggle-flag">--write-thumbnail</div></div>
+                        <label class="toggle"><input type="checkbox" id="flag-thumb" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Restrict Filenames (ASCII)</div><div class="toggle-flag">--restrict-filenames</div></div>
+                        <label class="toggle"><input type="checkbox" id="flag-restrict" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">List Formats Only</div><div class="toggle-flag">-F / --list-formats</div></div>
+                        <label class="toggle"><input type="checkbox" id="flag-listfmt" onchange="update()"><span class="toggle-track"></span></label>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /config-col -->
+
+        <!-- ── RIGHT: Console ────────────────────────── -->
+        <div class="console-col">
+
+            <div class="console-card">
+                <div class="console-header">
+                    <div class="console-dots">
+                        <div class="dot dot-r"></div>
+                        <div class="dot dot-y"></div>
+                        <div class="dot dot-g"></div>
+                    </div>
+                    <span class="console-title">COMMAND OUTPUT</span>
+                </div>
+                <div class="console-body">
+                    <div class="cmd-display" id="cmd-display">
+                        <span class="cmd-bin">yt-dlp</span> <span class="cmd-url">"URL"</span>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-val" id="stat-flags">0</div>
+                            <div class="stat-lbl">Flags</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-val" id="stat-mode">MERGE</div>
+                            <div class="stat-lbl">Mode</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-val" id="stat-extras">0</div>
+                            <div class="stat-lbl">Extras</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="copy-btn" onclick="copyCommand()">⧉ &nbsp; Copy Command</button>
+                    <button class="btn-ghost" onclick="resetAll()">↺ &nbsp; Reset All</button>
+                </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="config-section" style="margin-top:16px">
+                <div class="section-header">
+                    <span class="section-num">⚡</span>
+                    <span class="section-title">Quick Presets</span>
+                </div>
+                <div class="section-body">
+                    <div class="preset-grid">
+                        <button class="preset-btn" onclick="applyPreset('1080mp4')">
+                            <div class="preset-name">1080p MP4</div>
+                            <div class="preset-desc">H.264 + AAC merged</div>
+                        </button>
+                        <button class="preset-btn" onclick="applyPreset('mp3')">
+                            <div class="preset-name">MP3 Audio</div>
+                            <div class="preset-desc">Best quality mp3</div>
+                        </button>
+                        <button class="preset-btn" onclick="applyPreset('720webm')">
+                            <div class="preset-name">720p WebM</div>
+                            <div class="preset-desc">VP9 + Opus, efficient</div>
+                        </button>
+                        <button class="preset-btn" onclick="applyPreset('flac')">
+                            <div class="preset-name">FLAC Audio</div>
+                            <div class="preset-desc">Lossless extraction</div>
+                        </button>
+                        <button class="preset-btn" onclick="applyPreset('playlist')">
+                            <div class="preset-name">Playlist DL</div>
+                            <div class="preset-desc">1080p, ignore errors</div>
+                        </button>
+                        <button class="preset-btn" onclick="applyPreset('dry')">
+                            <div class="preset-name">Dry Run</div>
+                            <div class="preset-desc">Simulate + verbose</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /console-col -->
+
+    </div><!-- /wizard-grid -->
+
+    <footer>yt-dlp command wizard &nbsp;·&nbsp; powered by dark matter &nbsp;·&nbsp; <span style="color:var(--accent)">// sweep</span></footer>
+
+</div><!-- /wrapper -->
+
+<script>
+// ── State ──────────────────────────────────────────────
+const seg = {
+    'src-type':   'single',
+    mode:         'merge',
+    subs:         'none',
+    sb:           'off',
+    'cookies-src': 'none',
+};
+
+// ── Helpers ────────────────────────────────────────────
+const v    = id => document.getElementById(id)?.value?.trim() ?? '';
+const chk  = id => document.getElementById(id)?.checked ?? false;
+const cond = (id, show) => document.getElementById(id)?.classList.toggle('show', show);
+const esc  = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ── Segmented controls ─────────────────────────────────
+function setSeg(btn) {
+    const grp = btn.dataset.seg, val = btn.dataset.val;
+    document.querySelectorAll(`[data-seg="${grp}"]`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    seg[grp] = val;
+
+    if (grp === 'mode') {
+        cond('cond-best',  val === 'best');
+        cond('cond-merge', val === 'merge');
+        cond('cond-audio', val === 'audio');
+    }
+    if (grp === 'src-type')    cond('cond-playlist',        val === 'playlist');
+    if (grp === 'subs')        cond('cond-subs',            val !== 'none');
+    if (grp === 'sb')          cond('cond-sb',              val !== 'off');
+    if (grp === 'cookies-src') {
+        cond('cond-cookies-browser', val === 'browser');
+        cond('cond-cookies-file',    val === 'file');
+    }
+
+    update();
+}
+
+// ── Template preset ────────────────────────────────────
+function applyTemplate(val) {
+    cond('cond-fixed-tmpl',  val === 'fixed');
+    cond('cond-custom-tmpl', val === 'custom');
+    update();
+}
+
+// ── Browser custom input ───────────────────────────────
+function handleBrowserSelect(val) {
+    cond('cond-cookies-browser-custom', val === 'custom');
+    update();
+}
+
+// ── File browse: save path ─────────────────────────────
+async function browseSavePath() {
+    if ('showDirectoryPicker' in window) {
+        try {
+            const dir = await window.showDirectoryPicker({ mode: 'read' });
+            const el = document.getElementById('save-path');
+            // Browsers only expose the folder name, not the full path.
+            // Pre-fill with the name so the user can complete the path.
+            if (!el.value) el.value = dir.name;
+            el.focus();
+            update();
+        } catch { /* user cancelled */ }
+    } else {
+        // API not available (Firefox, mobile, non-secure context) — just focus the input
+        document.getElementById('save-path').focus();
+    }
+}
+
+// ── File browse: cookies.txt ───────────────────────────
+function browseCookiesFile() {
+    document.getElementById('cookies-file-input').click();
+}
+
+function handleCookiesFile(input) {
+    if (input.files && input.files[0]) {
+        const el = document.getElementById('cookies-path');
+        // Browsers expose only the filename for security — user must complete the path
+        el.value = input.files[0].name;
+        el.focus();
+        update();
+    }
+}
+
+// ── Build command ──────────────────────────────────────
+function buildCommand() {
+    const parts = [];   // [text, 'flag'|'value']
+    let flags = 0, extras = 0;
+
+    const mode = seg.mode;
+
+    // ── Format selection ──
+    if (mode === 'audio') {
+        parts.push(['-x', 'flag']);
+        const fmt = v('audio-fmt');
+        parts.push([`--audio-format ${fmt}`, 'flag']);
+        const br = v('audio-bitrate');
+        if (br) {
+            parts.push([`--audio-quality ${br}`, 'flag']);
+        } else {
+            const q = v('audio-quality');
+            if (q !== '5') parts.push([`--audio-quality ${q}`, 'flag']);
+        }
+        flags += 2;
+    } else if (mode === 'merge') {
+        const res = v('resolution');
+        const vc  = v('vcodec');
+        const ac  = v('acodec');
+        const vcMap = { h264:'avc1', h265:'hev1', vp9:'vp09', av1:'av01' };
+        const acMap = { aac:'mp4a', opus:'opus', mp3:'mp3' };
+
+        let vf = 'bestvideo';
+        if (res !== 'best') vf += `[height<=${res}]`;
+        if (vc  !== 'any')  vf += `[vcodec^=${vcMap[vc]}]`;
+
+        let af = 'bestaudio';
+        if (ac !== 'any')   af += `[acodec^=${acMap[ac]}]`;
+
+        parts.push([`-f "${vf}+${af}/best"`, 'flag']);
+        parts.push([`--merge-output-format ${v('merge-fmt')}`, 'flag']);
+        flags += 2;
+    }
+    // 'best' — no -f needed
+
+    // ── Playlist ──
+    if (seg['src-type'] === 'playlist') {
+        const items = v('playlist-items');
+        if (items) { parts.push([`-I ${items}`, 'flag']); flags++; }
+    }
+
+    // ── Output path ──
+    const path = v('save-path');
+    if (path) { parts.push([`-P "${path}"`, 'flag']); flags++; }
+
+    // ── Filename template ──
+    const tmplVal = v('tmpl-preset');
+    if (tmplVal === 'fixed') {
+        const name = v('fixed-name');
+        // yt-dlp fully supports literal text in -o; %(ext)s appends the real extension
+        const tmpl = name ? `${name}.%(ext)s` : 'download.%(ext)s';
+        parts.push([`-o "${tmpl}"`, 'flag']); flags++;
+    } else if (tmplVal === 'custom') {
+        const tmpl = v('custom-tmpl');
+        if (tmpl) { parts.push([`-o "${tmpl}"`, 'flag']); flags++; }
+    } else {
+        const DEFAULT_TMPL = '%(title)s [%(id)s].%(ext)s';
+        if (tmplVal && tmplVal !== DEFAULT_TMPL) {
+            parts.push([`-o "${tmplVal}"`, 'flag']); flags++;
+        }
+    }
+
+    // ── Subtitles ──
+    if (seg.subs !== 'none') {
+        const flag = seg.subs === 'auto' ? '--write-auto-subs' : '--write-subs';
+        parts.push([flag, 'flag']); extras++;
+        const langs = v('sub-langs');
+        if (langs) parts.push([`--sub-langs "${langs}"`, 'value']);
+        const sfmt = v('sub-format');
+        if (sfmt) parts.push([`--sub-format ${sfmt}`, 'value']);
+    }
+
+    // ── Metadata toggles ──
+    if (chk('embed-thumb')) { parts.push(['--embed-thumbnail', 'flag']); extras++; }
+    if (chk('embed-meta'))  { parts.push(['--embed-metadata',  'flag']); extras++; }
+    if (chk('embed-subs'))  { parts.push(['--embed-subs',      'flag']); extras++; }
+
+    // ── SponsorBlock ──
+    if (seg.sb !== 'off') {
+        const cats = v('sb-cats');
+        parts.push([seg.sb === 'mark' ? `--sponsorblock-mark ${cats}` : `--sponsorblock-remove ${cats}`, 'flag']);
+        extras++;
+    }
+
+    // ── Cookies ──
+    if (seg['cookies-src'] === 'browser') {
+        const sel = v('cookies-browser-sel');
+        const browser = sel === 'custom' ? v('cookies-browser-custom') : sel;
+        if (browser) { parts.push([`--cookies-from-browser ${browser}`, 'flag']); flags++; }
+    } else if (seg['cookies-src'] === 'file') {
+        const cp = v('cookies-path');
+        if (cp) { parts.push([`--cookies "${cp}"`, 'flag']); flags++; }
+    }
+
+    // ── Network ──
+    const rl = v('rate-limit');   if (rl) { parts.push([`-r ${rl}`,          'flag']); flags++; }
+    const nf = v('concur-frags'); if (nf) { parts.push([`-N ${nf}`,          'flag']); flags++; }
+    const px = v('proxy');        if (px) { parts.push([`--proxy "${px}"`,   'flag']); flags++; }
+
+    // ── Bool flags ──
+    if (chk('flag-listfmt'))  { parts.push(['-F',                   'flag']); flags++; }
+    if (chk('flag-sim'))      { parts.push(['-s',                   'flag']); flags++; }
+    if (chk('flag-verbose'))  { parts.push(['-v',                   'flag']); flags++; }
+    if (chk('flag-ignore'))   { parts.push(['-i',                   'flag']); flags++; }
+    if (chk('flag-nowrt'))    { parts.push(['-w',                   'flag']); flags++; }
+    if (chk('flag-thumb'))    { parts.push(['--write-thumbnail',    'flag']); extras++; }
+    if (chk('flag-restrict')) { parts.push(['--restrict-filenames', 'flag']); flags++; }
+
+    const modeLabel = { best:'BEST', merge:'MERGE', audio:'AUDIO' }[mode];
+    const url = v('url') || 'URL';
+
+    return { parts, url, flags, extras, modeLabel };
+}
+
+// ── Render HTML (syntax-highlighted) ──────────────────
+function renderHTML({ parts, url }) {
+    const tokens = [`<span class="cmd-bin">yt-dlp</span>`];
+    for (const [text, type] of parts) {
+        const cls = type === 'flag' ? 'cmd-flag' : 'cmd-value';
+        tokens.push(`<span class="${cls}">${esc(text)}</span>`);
+    }
+    tokens.push(`<span class="cmd-url">"${esc(url)}"</span>`);
+    return tokens.join(' \\\n  ');
+}
+
+// ── Render plain (for clipboard) ──────────────────────
+function renderPlain({ parts, url }) {
+    return ['yt-dlp', ...parts.map(([t]) => t), `"${url}"`].join(' \\\n  ');
+}
+
+// ── Update UI ─────────────────────────────────────────
+function update() {
+    const result = buildCommand();
+    document.getElementById('cmd-display').innerHTML = renderHTML(result);
+    document.getElementById('stat-flags').textContent  = result.flags;
+    document.getElementById('stat-mode').textContent   = result.modeLabel;
+    document.getElementById('stat-extras').textContent = result.extras;
+}
+
+// ── Copy ──────────────────────────────────────────────
+function copyCommand() {
+    const plain = renderPlain(buildCommand());
+    const btn = document.getElementById('copy-btn');
+    navigator.clipboard.writeText(plain).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✓ &nbsp; Copied!';
+        btn.style.background = 'linear-gradient(135deg,#00c870,#008040)';
+        btn.style.boxShadow  = '0 0 20px rgba(0,200,112,0.5)';
+        setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.boxShadow = ''; }, 1500);
+    }).catch(() => {
+        btn.innerHTML = '✗ &nbsp; Copy Failed';
+        setTimeout(() => { btn.innerHTML = '⧉ &nbsp; Copy Command'; }, 1500);
+    });
+}
+
+// ── Reset ─────────────────────────────────────────────
+function resetAll() {
+    ['url','save-path','playlist-items','rate-limit','concur-frags','proxy',
+     'sub-langs','audio-bitrate','custom-tmpl','fixed-name','cookies-path',
+     'cookies-browser-custom']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+    document.getElementById('resolution').value         = 'best';
+    document.getElementById('merge-fmt').value          = 'mp4';
+    document.getElementById('vcodec').value             = 'any';
+    document.getElementById('acodec').value             = 'any';
+    document.getElementById('audio-fmt').value          = 'mp3';
+    document.getElementById('audio-quality').value      = '0';
+    document.getElementById('tmpl-preset').value        = '%(title)s [%(id)s].%(ext)s';
+    document.getElementById('sub-format').value         = '';
+    document.getElementById('sb-cats').value            = 'all';
+    document.getElementById('cookies-browser-sel').value = 'chrome';
+
+    cond('cond-fixed-tmpl',             false);
+    cond('cond-custom-tmpl',            false);
+    cond('cond-cookies-browser-custom', false);
+
+    const defaults = {
+        'src-type':    'single',
+        mode:          'merge',
+        subs:          'none',
+        sb:            'off',
+        'cookies-src': 'none',
+    };
+    Object.entries(defaults).forEach(([grp, val]) => {
+        const btn = document.querySelector(`[data-seg="${grp}"][data-val="${val}"]`);
+        if (btn) setSeg(btn);
+    });
+    update();
+}
+
+// ── Quick Presets ──────────────────────────────────────
+function applyPreset(name) {
+    resetAll();
+    const setVal = (id, val) => { document.getElementById(id).value = val; };
+    const setChk = (id, val) => { document.getElementById(id).checked = val; };
+    const activateSeg = (grp, val) => setSeg(document.querySelector(`[data-seg="${grp}"][data-val="${val}"]`));
+
+    switch (name) {
+        case '1080mp4':
+            setVal('resolution', '1080'); setVal('merge-fmt', 'mp4');
+            setVal('vcodec', 'h264');     setVal('acodec', 'aac');
+            break;
+        case 'mp3':
+            activateSeg('mode', 'audio');
+            setVal('audio-fmt', 'mp3'); setVal('audio-quality', '0');
+            break;
+        case '720webm':
+            setVal('resolution', '720'); setVal('merge-fmt', 'webm');
+            setVal('vcodec', 'vp9');     setVal('acodec', 'opus');
+            break;
+        case 'flac':
+            activateSeg('mode', 'audio');
+            setVal('audio-fmt', 'flac'); setVal('audio-quality', '0');
+            break;
+        case 'playlist':
+            activateSeg('src-type', 'playlist');
+            setVal('resolution', '1080'); setVal('merge-fmt', 'mp4');
+            setChk('flag-ignore', true);
+            // Use "Index — Title" preset (no template syntax shown in UI)
+            setVal('tmpl-preset', '%(playlist_index)s - %(title)s.%(ext)s');
+            break;
+        case 'dry':
+            setChk('flag-sim', true); setChk('flag-verbose', true);
+            break;
+    }
+    update();
+}
+
+// ── Init ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', update);
+</script>
+</body>
+</html>
