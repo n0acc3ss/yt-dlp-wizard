@@ -29,6 +29,8 @@
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        html { overflow-x: hidden; }
+
         body {
             font-family: 'DM Sans', sans-serif;
             background-color: var(--bg);
@@ -67,10 +69,11 @@
             100% { transform: translate(30px,20px) scale(1.04); }
         }
 
-        .wrapper { position:relative; z-index:10; max-width:1200px; margin:0 auto; padding:40px 24px 80px; }
+        .wrapper { position:relative; z-index:10; width:100%; max-width:1200px; margin:0 auto; padding:40px 24px 80px; }
 
         /* ── Header ─────────────────────────────────── */
-        header { display:flex; align-items:center; gap:20px; margin-bottom:40px; }
+        header { display:flex; align-items:center; gap:20px; margin-bottom:40px; overflow:hidden; }
+        .header-text { min-width:0; }
 
         .logo-ring {
             flex-shrink: 0;
