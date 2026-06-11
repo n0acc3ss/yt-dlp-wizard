@@ -72,11 +72,6 @@
         /* ── Header ─────────────────────────────────── */
         header { display:flex; align-items:center; gap:20px; margin-bottom:40px; }
 
-        /*
-         * Logo ring: purely decorative border + glow. overflow is intentionally
-         * NOT hidden so the image inside never gets circular-cropped or shrunk.
-         * The border-radius applies to the container bg/border, not the child img.
-         */
         .logo-ring {
             flex-shrink: 0;
             width: 88px; height: 88px;
@@ -87,11 +82,11 @@
             animation: haloBreath 3s ease-in-out infinite;
             display: flex; align-items: center; justify-content: center;
             padding: 6px;
-            /* No overflow:hidden — logo displays at full, uncropped size */
+        
         }
         .logo-ring img {
             width: 100%; height: 100%;
-            object-fit: contain; /* scale to fit, never crop */
+            object-fit: contain; 
             display: block;
         }
 
@@ -351,7 +346,7 @@
 
     <header>
         <div class="logo-ring">
-            <img src="al-phone/yt-dlp_wizard_logo.webp" alt="yt-dlp">
+            <img src="https://raw.githubusercontent.com/n0acc3ss/yt-dlp-wizard/refs/heads/main/yt-dlp_wizard_logo.webp" alt="yt-dlp">
         </div>
         <div class="header-text">
             <h1><span class="glow">yt-dlp</span> Command Wizard</h1>
