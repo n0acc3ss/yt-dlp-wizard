@@ -112,6 +112,15 @@
             .wizard-grid { grid-template-columns:1fr; }
             .console-col { order:-1; }
             .console-col .config-section { display:none; }
+            .console-header { display:none; }
+            .cmd-display { min-height:unset; max-height:9rem; overflow-y:auto; }
+            .stats-row { gap:6px; margin-bottom:10px; }
+            .stat-card { padding:5px 4px; }
+            .stat-val { font-size:0.85rem; }
+            .stat-lbl { font-size:0.55rem; margin-top:1px; }
+            .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+            .btn-row .btn-primary,
+            .btn-row .btn-ghost { margin-bottom:0; }
         }
 
         /* ── Config sections ────────────────────────── */
@@ -777,8 +786,10 @@
                             <div class="stat-lbl">Extras</div>
                         </div>
                     </div>
-                    <button class="btn-primary" id="copy-btn" onclick="copyCommand()">⧉ &nbsp; Copy Command</button>
-                    <button class="btn-ghost" onclick="resetAll()">↺ &nbsp; Reset All</button>
+                    <div class="btn-row">
+                        <button class="btn-primary" id="copy-btn" onclick="copyCommand()">⧉ &nbsp; Copy Command</button>
+                        <button class="btn-ghost" onclick="resetAll()">↺ &nbsp; Reset All</button>
+                    </div>
                 </div>
             </div>
 
